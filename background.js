@@ -17,10 +17,22 @@ async function abrirExplorador() {
     if (existente) {
         await chrome.tabs.update(existente.id, { active: true });
         await chrome.windows.update(existente.windowId, { focused: true });
+        chrome.tabs.sendMessage(existente.id, { action: "refreshExplorer" }).catch(() => {});
     } else {
         await chrome.tabs.create({ url });
     }
 }
+
+// Al devolver el foco a la pestaña del explorador haciendo clic en ella, actualizar la lista de archivos
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+    try {
+        const tab = await chrome.tabs.get(activeInfo.tabId);
+        const url = chrome.runtime.getURL("explorador/index.html");
+        if (tab.url && tab.url.startsWith(url)) {
+            chrome.tabs.sendMessage(tab.id, { action: "refreshExplorer" }).catch(() => {});
+        }
+    } catch {}
+});
 
 chrome.runtime.onInstalled.addListener(() => {
     chrome.contextMenus.create({
