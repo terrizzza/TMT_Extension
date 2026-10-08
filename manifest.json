@@ -5,6 +5,7 @@
   "description": "TMT - Terri Multitool. Incluye componentes para NGCPT y NextFleet.",
   "permissions": [
     "activeTab",
+    "contextMenus",
     "scripting",
     "storage"
   ],

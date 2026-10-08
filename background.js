@@ -10,6 +10,30 @@ chrome.commands.onCommand.addListener((command) => {
     }
 });
 
+// Explorador de archivos (pestaña propia de la extensión): si ya está abierto, se enfoca en vez de duplicarlo
+async function abrirExplorador() {
+    const url = chrome.runtime.getURL("explorador/index.html");
+    const [existente] = await chrome.tabs.query({ url });
+    if (existente) {
+        await chrome.tabs.update(existente.id, { active: true });
+        await chrome.windows.update(existente.windowId, { focused: true });
+    } else {
+        await chrome.tabs.create({ url });
+    }
+}
+
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({
+        id: "abrir-explorador",
+        title: "Abrir explorador de archivos",
+        contexts: ["action"]
+    });
+});
+
+chrome.contextMenus.onClicked.addListener((info) => {
+    if (info.menuItemId === "abrir-explorador") abrirExplorador();
+});
+
 // Escucha globalmente los atajos listados en manifest.json y evita errores si la pestaña no admite content scripts
 chrome.commands.onCommand.addListener((command) => {
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
@@ -31,6 +55,8 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === "openOptions") {
         chrome.runtime.openOptionsPage();
+    } else if (msg.action === "openExplorer") {
+        abrirExplorador();
     } else if (msg.action === "openTab") {
         chrome.tabs.create({ url: msg.url });
     }

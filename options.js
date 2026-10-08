@@ -1,4 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("openExplorer").addEventListener("click", () => {
+        chrome.runtime.sendMessage({ action: "openExplorer" });
+    });
+
 
     //
     // === AUTO-OPEN ===
