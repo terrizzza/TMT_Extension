@@ -205,4 +205,117 @@
             setTimeout(publicarTotales, 500);
         });
     }
+
+    // === PUENTE UNIVERSAL DE ARRASTRE DE ARCHIVOS (TMT FILE DRAG BRIDGE) ===
+    let tmtDraggingFiles = null;
+
+    window.addEventListener("message", function (event) {
+        if (event.data && event.data.type === "TMT_SET_DRAGGING_FILES") {
+            tmtDraggingFiles = event.data.files;
+        }
+    });
+
+    function getSafeMime(filename, mime) {
+        if (mime && mime !== "application/octet-stream" && mime !== "") return mime;
+        const ext = (filename || "").split(".").pop().toLowerCase();
+        const map = {
+            jpg: "image/jpeg",
+            jpeg: "image/jpeg",
+            png: "image/png",
+            webp: "image/webp",
+            gif: "image/gif",
+            svg: "image/svg+xml",
+            bmp: "image/bmp",
+            ico: "image/x-icon",
+            mp3: "audio/mpeg",
+            wav: "audio/wav",
+            ogg: "audio/ogg",
+            m4a: "audio/mp4",
+            mp4: "video/mp4",
+            webm: "video/webm",
+            mov: "video/quicktime",
+            pdf: "application/pdf",
+            txt: "text/plain",
+            json: "application/json",
+            csv: "text/csv",
+            zip: "application/zip"
+        };
+        return map[ext] || mime || "application/octet-stream";
+    }
+
+    function dataUrlToFile(dataUrl, filename, mimeType, lastModified) {
+        try {
+            const arr = dataUrl.split(",");
+            const rawMime = mimeType || (arr[0].match(/:(.*?);/) || [])[1];
+            const mime = getSafeMime(filename, rawMime);
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new File([u8arr], filename, { type: mime, lastModified: lastModified || Date.now() });
+        } catch (e) {
+            return null;
+        }
+    }
+
+    // Permitir drop si hay archivos de TMT arrastrándose
+    window.addEventListener("dragover", function (e) {
+        if (tmtDraggingFiles && tmtDraggingFiles.length > 0) {
+            e.dataTransfer.dropEffect = "copy";
+        }
+    }, true);
+
+    // Interceptar el evento 'drop' en fase de captura antes que cualquier script de la página
+    window.addEventListener("drop", function (e) {
+        if (!tmtDraggingFiles || tmtDraggingFiles.length === 0) return;
+
+        try {
+            const dt = new DataTransfer();
+            for (const item of tmtDraggingFiles) {
+                if (item.dataUrl) {
+                    const f = dataUrlToFile(item.dataUrl, item.name, item.type, item.lastModified);
+                    if (f) dt.items.add(f);
+                }
+            }
+
+            if (dt.files.length > 0) {
+                // Inyectar el FileList real en e.dataTransfer
+                try {
+                    Object.defineProperty(e.dataTransfer, "files", {
+                        get: () => dt.files,
+                        configurable: true,
+                        enumerable: true
+                    });
+                    Object.defineProperty(e.dataTransfer, "items", {
+                        get: () => dt.items,
+                        configurable: true,
+                        enumerable: true
+                    });
+                    Object.defineProperty(e.dataTransfer, "types", {
+                        get: () => ["Files"],
+                        configurable: true,
+                        enumerable: true
+                    });
+                } catch (err) {}
+
+                // Si se suelta sobre un dropzone vinculado a un <input type="file">, inyectarlo también
+                const target = e.target;
+                const fileInput = (target && target.tagName === "INPUT" && target.type === "file")
+                    ? target
+                    : (target && target.querySelector && target.querySelector('input[type="file"]'))
+                    || (target && target.htmlFor && document.getElementById(target.htmlFor))
+                    || (target && target.closest && target.closest("label") && target.closest("label").querySelector('input[type="file"]'));
+
+                if (fileInput && fileInput.type === "file") {
+                    try {
+                        fileInput.files = dt.files;
+                    } catch (err) {}
+                }
+            }
+        } catch (err) {
+            console.warn("[TMT Bridge] Error inyectando archivos en drop:", err);
+        }
+    }, true);
 })();

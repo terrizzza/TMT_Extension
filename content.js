@@ -137,4 +137,18 @@ chrome.runtime.onMessage.addListener((msg) => {
             window.NextfleetBar.toggle();
         }
     }
+
+    // 3. Puente de arrastre de archivos desde el explorador TMT
+    if (msg.action === "tmtUpdateDraggingFiles") {
+        window.postMessage({ type: "TMT_SET_DRAGGING_FILES", files: msg.files }, "*");
+    }
 });
+
+// Respaldo proactivo al entrar arrastrando a la ventana
+window.addEventListener("dragenter", () => {
+    chrome.runtime.sendMessage({ action: "tmtGetDraggingFiles" }, (res) => {
+        if (res && res.files) {
+            window.postMessage({ type: "TMT_SET_DRAGGING_FILES", files: res.files }, "*");
+        }
+    });
+}, true);

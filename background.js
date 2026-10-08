@@ -64,6 +64,8 @@ chrome.action.onClicked.addListener((tab) => {
     });
 });
 
+let currentDraggingFiles = null;
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     if (msg.action === "openOptions") {
         chrome.runtime.openOptionsPage();
@@ -71,6 +73,23 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
         abrirExplorador();
     } else if (msg.action === "openTab") {
         chrome.tabs.create({ url: msg.url });
+    } else if (msg.action === "tmtSetDraggingFiles") {
+        currentDraggingFiles = msg.files;
+        chrome.tabs.query({}, (tabs) => {
+            for (const t of tabs) {
+                chrome.tabs.sendMessage(t.id, { action: "tmtUpdateDraggingFiles", files: msg.files }).catch(() => {});
+            }
+        });
+    } else if (msg.action === "tmtClearDraggingFiles") {
+        currentDraggingFiles = null;
+        chrome.tabs.query({}, (tabs) => {
+            for (const t of tabs) {
+                chrome.tabs.sendMessage(t.id, { action: "tmtUpdateDraggingFiles", files: null }).catch(() => {});
+            }
+        });
+    } else if (msg.action === "tmtGetDraggingFiles") {
+        sendResponse({ files: currentDraggingFiles });
+        return true;
     }
 });
 
