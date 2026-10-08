@@ -85,6 +85,15 @@ window.NextfleetBar = (function() {
                     }
                 }
 
+                const btnTel = target.closest(".tmt-btn-tel");
+                if (btnTel) {
+                    const tel = btnTel.dataset.tel;
+                    if (tel) {
+                        copiarTextoAlPortapapeles(tel, btnTel, `¡Teléfono ${tel} copiado!`);
+                        return;
+                    }
+                }
+
                 const btnNg = target.closest(".tmt-btn-ver-ng");
                 if (btnNg) {
                     const ngId = btnNg.dataset.ngId;
@@ -417,6 +426,57 @@ window.NextfleetBar = (function() {
                 mask-size: contain !important;
             }
 
+            /* TMT - Botón Teléfono (extraído de las observaciones) */
+            button.tmt-btn-tel {
+                display: inline-flex !important;
+                align-items: center !important;
+                gap: 6px !important;
+                height: 32px !important;
+                padding: 0 10px !important;
+                margin: 0 4px !important;
+                border-radius: 6px !important;
+                background-color: #eff6ff !important;
+                border: 1.5px solid #2563eb !important;
+                color: #1d4ed8 !important;
+                font-size: 14px !important;
+                font-weight: 700 !important;
+                cursor: pointer !important;
+                user-select: none !important;
+                box-shadow: 0 1px 3px rgba(37, 99, 235, 0.15) !important;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                font-family: inherit !important;
+                vertical-align: middle !important;
+                box-sizing: border-box !important;
+            }
+
+            button.tmt-btn-tel:hover {
+                background-color: #2563eb !important;
+                color: #ffffff !important;
+                border-color: #1d4ed8 !important;
+                transform: translateY(-1px) !important;
+                box-shadow: 0 3px 8px rgba(37, 99, 235, 0.3) !important;
+            }
+
+            button.tmt-btn-tel:active {
+                transform: translateY(0) scale(0.98) !important;
+            }
+
+            button.tmt-btn-tel .tmt-tel-icon {
+                display: inline-block !important;
+                width: 14px !important;
+                height: 14px !important;
+                flex-shrink: 0 !important;
+                background-color: currentColor !important;
+                -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z'/%3E%3C/svg%3E") !important;
+                mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z'/%3E%3C/svg%3E") !important;
+                -webkit-mask-repeat: no-repeat !important;
+                mask-repeat: no-repeat !important;
+                -webkit-mask-position: center !important;
+                mask-position: center !important;
+                -webkit-mask-size: contain !important;
+                mask-size: contain !important;
+            }
+
             /* TMT - Botón sustituto de Cabecera ID (reemplaza al <label>) */
             button.tmt-btn-id {
                 display: inline-flex !important;
@@ -597,6 +657,22 @@ window.NextfleetBar = (function() {
         return "";
     }
 
+    function obtenerTelefonoObservaciones() {
+        // Teléfono español de 9 dígitos (empieza por 6, 7, 8 o 9), con prefijo +34/0034 y separadores opcionales.
+        // Los lookarounds evitan cortar números más largos, como la OR de 10 dígitos (20xxxxxxxx).
+        const reTel = /(?<![\d+])(?:(?:\+|00)34[\s.-]?)?([6-9]\d{2}[\s.-]?\d{3}[\s.-]?\d{3}|[6-9]\d[\s.-]?\d{3}[\s.-]?\d{2}[\s.-]?\d{2})(?!\d)/;
+
+        const textareas = Array.from(document.querySelectorAll('textarea[tabindex="235"], textarea[id^="GRUPO_TAB_"], .tab-pane textarea, textarea'));
+        for (const ta of textareas) {
+            const val = (ta.value || ta.textContent || "").trim();
+            if (!val) continue;
+
+            const m = val.match(reTel);
+            if (m) return m[1].replace(/\D/g, "");
+        }
+        return "";
+    }
+
     function actualizarBotonesMatriculaEId() {
         actualizarCabeceraNextfleet();
     }
@@ -610,6 +686,7 @@ window.NextfleetBar = (function() {
 
         const plate = obtenerMatriculaActual();
         const ngId = obtenerAutorizacionNorthgate();
+        const telefono = obtenerTelefonoObservaciones();
 
         cabeceras.forEach(cabecera => {
             // Asegurar que el contenedor permita disponer horizontalmente los botones
@@ -710,6 +787,31 @@ window.NextfleetBar = (function() {
                 }
             } else if (btnNg) {
                 btnNg.remove();
+            }
+
+            // 4. Botón Teléfono a la derecha del botón Ver en NG (o del último botón existente)
+            const anchorTel = btnNg || anchorEl;
+            let btnTel = cabecera.querySelector(".tmt-btn-tel");
+            if (telefono) {
+                if (!btnTel) {
+                    btnTel = document.createElement("button");
+                    btnTel.type = "button";
+                    btnTel.className = "btn tmt-btn-tel";
+                    anchorTel.insertAdjacentElement("afterend", btnTel);
+                } else if (btnTel.previousElementSibling !== anchorTel) {
+                    anchorTel.insertAdjacentElement("afterend", btnTel);
+                }
+
+                if (btnTel.dataset.tel !== telefono) {
+                    btnTel.dataset.tel = telefono;
+                    btnTel.title = `Clic para copiar teléfono: ${telefono}`;
+                    btnTel.innerHTML = `
+                        <span class="tmt-tel-icon" aria-hidden="true"></span>
+                        <span class="tmt-tel-num">${telefono}</span>
+                    `;
+                }
+            } else if (btnTel) {
+                btnTel.remove();
             }
         });
     }
