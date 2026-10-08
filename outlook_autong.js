@@ -79,7 +79,13 @@
         ultimaAperturaOutlook = ahora;
 
         const url = `https://nthp.northgateplc.es/pro/web/orden.html?id=${encodeURIComponent(ngId)}`;
-        chrome.runtime.sendMessage({ action: "openTab", url: url });
+        // Si la extensión se recargó, el content script queda huérfano y chrome.runtime desaparece
+        try {
+            if (!chrome.runtime || !chrome.runtime.id) throw new Error("Extension context invalidated");
+            chrome.runtime.sendMessage({ action: "openTab", url: url });
+        } catch (e) {
+            window.open(url, "_blank");
+        }
     }
 
     function escanearYActualizarOutlook() {
